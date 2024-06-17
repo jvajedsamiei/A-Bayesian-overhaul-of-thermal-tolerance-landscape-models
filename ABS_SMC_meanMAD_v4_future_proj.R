@@ -32,6 +32,7 @@ library(writexl)
 library(brms)
 library(officer)
 library(flextable)
+library(patchwork) # New library for plot_layout
 
 ##### ABC-SMC ----
 ## Addresses for row experimental data and output ----
@@ -397,7 +398,7 @@ particles_weights_MADs_df_CHW$mean_MAD <- mean_MAD
 particles_weights_MADs_df_CHW$iteration <- iteration
 length(particles_weights_MADs_df_CHW$meanlog10LBR_refT)
 
-
+LTT=20
 LTTs =  c(20) # 20 °C was the lowest temperature in the experiment. Therefore, in this case, LTT=20 means has a similar effect as not setting any LTT.
 for(LTT in LTTs){
   result_LTT = paste0(LTT, "_results_DHW.rds")
@@ -637,7 +638,7 @@ Saving the plots to a PDF: Each plot generated for a sample is stored in a list.
 ## Load your survival data collected in the experiment(s) ----
 observed_surv_df <- read_excel(file.path(main_address, "obsSurvival_Temperature_dfs/observed_surv_df.xlsx"))
 ## Function to simulate a population of LBRs and LBs (MC) ----
-simulate_T_LBR_pop <- function(temperature_sample_df, meanlog10LBR_refT, sdlog10LBR_refT, k, T_ref) {
+simulate_T_LBR_pop <- function(temperature_sample_df, meanlog10LBR_refT, sdlog10LBR_refT, k, T_ref, LTT) {
   N_ <- 100
   T_LBR_pop_df <- lapply(1:N_, function(ind) {
     repeat {
@@ -723,6 +724,7 @@ theme_publication <- function(base_size = 11, base_family = "") {
           plot.margin = margin(t = 2, r = 6, b = 2, l = 6, unit = "mm") ) } # adjust the space between legend entries
 temperature_df <- read_excel(file.path(main_address, "obsSurvival_Temperature_dfs/temperature_df.xlsx")) # for us 
 T_ref = 28
+LTT=20
 particles_weights_df <- particles_weights_MADs_df_CHW
 sample_names <- c('26', '27', '28', '29') # You can adjust these sample names as needed
 system.time({
@@ -744,7 +746,7 @@ system.time({
       meanlog10LBR_refT <- sampled_row[1,1]
       sdlog10LBR_refT <- sampled_row[1, 2]
       k <- sampled_row[1, 3]
-      T_LBR_pop_df_wide <- simulate_T_LBR_pop(temperature_sample_df, meanlog10LBR_refT, sdlog10LBR_refT, k, T_ref)
+      T_LBR_pop_df_wide <- simulate_T_LBR_pop(temperature_sample_df, meanlog10LBR_refT, sdlog10LBR_refT, k, T_ref, LTT)
       T_LBR_pop_df_wide = as.data.frame(T_LBR_pop_df_wide)
       all_sim_surv_curves[[paste("meanlog10LBR_refT", meanlog10LBR_refT, "sdlog10LBR_refT", sdlog10LBR_refT, "k", k, sep = "_")]] <- T_LBR_pop_df_wide
       
@@ -802,6 +804,7 @@ temperature_df <- read_excel(paste0(main_address, "/Temp_data/KOB2022_summer/NEW
 T_ref = 28
 particles_weights_df <- particles_weights_MADs_df_DHW
 sample_names <- c('E2', 'A1', 'B1', 'F2') # DHW
+LTT=20
 LTTs = c(20) #c(20, 22, 23, 24, 24.5, 25, 25.5, 26, 26.5, 27, 27.5) 
 for(LTT in LTTs){
   system.time({
@@ -823,7 +826,7 @@ for(LTT in LTTs){
         meanlog10LBR_refT <- sampled_row[1,1]
         sdlog10LBR_refT <- sampled_row[1, 2]
         k <- sampled_row[1, 3]
-        T_LBR_pop_df_wide <- simulate_T_LBR_pop(temperature_sample_df, meanlog10LBR_refT, sdlog10LBR_refT, k, T_ref)
+        T_LBR_pop_df_wide <- simulate_T_LBR_pop(temperature_sample_df, meanlog10LBR_refT, sdlog10LBR_refT, k, T_ref, LTT)
         T_LBR_pop_df_wide = as.data.frame(T_LBR_pop_df_wide)
         all_sim_surv_curves[[paste("meanlog10LBR_refT", meanlog10LBR_refT, "sdlog10LBR_refT", sdlog10LBR_refT, "k", k, sep = "_")]] <- T_LBR_pop_df_wide
         
@@ -1542,7 +1545,7 @@ final_plot <- ggdraw() +
 ggsave("Projections_Fluc_ggplot.pdf", final_plot, width = plot_width_FullPage/2.3, height = 19, units = "cm")
 
 
-## Future projection of recruitment (Find/replace Fluc or Fluc)----
+## Future projection of recruitment----
 # Set your working directory
 setwd(file.path(main_address, "Outputs", "ABC_SMC_MAD_withLTT", "projections", "Fluc")) 
 
